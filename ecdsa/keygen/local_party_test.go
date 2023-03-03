@@ -30,6 +30,7 @@ import (
 )
 
 const (
+	//from test_utils.go, testParticipants & testThreshold are 20 and
 	testParticipants = TestParticipants
 	testThreshold    = TestThreshold
 )
@@ -48,6 +49,7 @@ func TestStartRound1Paillier(t *testing.T) {
 	threshold := 1
 	params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[0], len(pIDs), threshold)
 
+	//LoadKeygenTestFixtures returns []LocalPartySaveData, some public keys
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants)
 	if err != nil {
 		common.Logger.Info("No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
@@ -101,15 +103,18 @@ func TestFinishAndSaveH1H2(t *testing.T) {
 	} else {
 		lp = NewLocalParty(params, out, nil).(*LocalParty)
 	}
+
 	if err := lp.Start(); err != nil {
 		assert.FailNow(t, err.Error())
 	}
 
 	// RSA modulus 2048 (two 1024-bit primes)
 	// round up to 256
+	// n-tilde, h1, h2 for range proofs
 	len1 := len(lp.data.H1j[0].Bytes())
 	len2 := len(lp.data.H2j[0].Bytes())
 	len3 := len(lp.data.NTildej[0].Bytes())
+
 	if len1%2 != 0 {
 		len1 = len1 + (256 - (len1 % 256))
 	}
@@ -179,6 +184,8 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	}
 
 	p2pCtx := tss.NewPeerContext(pIDs)
+
+	//states a empty list of LocalPartys; local Party consists of a baseparty, tss params, temp data, LocalPartySaveData, and two channels (out channel and end channel. )
 	parties := make([]*LocalParty, 0, len(pIDs))
 
 	errCh := make(chan *tss.Error, len(pIDs))
@@ -194,12 +201,18 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 		var P *LocalParty
 		params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[i], len(pIDs), threshold)
 		if i < len(fixtures) {
+
+			//if fixture exist, then use the fixture to generate the Local party.
 			P = NewLocalParty(params, outCh, endCh, fixtures[i].LocalPreParams).(*LocalParty)
 		} else {
 			P = NewLocalParty(params, outCh, endCh).(*LocalParty)
 		}
 		parties = append(parties, P)
+
+		//HERE! It uses go func to generate a new Goroutine.
 		go func(P *LocalParty) {
+
+			//TODO: check out how P.start works.
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
@@ -210,6 +223,7 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	var ended int32
 keygen:
 	for {
+		//runtime.NumGoroutine() returns the number of goroutines that currently exist.
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case err := <-errCh:
@@ -236,11 +250,13 @@ keygen:
 
 		case save := <-endCh:
 			// SAVE a test fixture file for this P (if it doesn't already exist)
+
 			// .. here comes a workaround to recover this party's index (it was removed from save data)
 			index, err := save.OriginalIndex()
 			assert.NoErrorf(t, err, "should not be an error getting a party's index from save data")
 			tryWriteTestFixtureFile(t, index, save)
 
+			// record how many parties have ended.
 			atomic.AddInt32(&ended, 1)
 			if atomic.LoadInt32(&ended) == int32(len(pIDs)) {
 				t.Logf("Done. Received save data from %d participants", ended)
@@ -259,6 +275,7 @@ keygen:
 						}
 						pShares = append(pShares, shareStruct)
 					}
+
 					uj, err := pShares[:threshold+1].ReConstruct(tss.S256())
 					assert.NoError(t, err, "vss.ReConstruct should not throw error")
 

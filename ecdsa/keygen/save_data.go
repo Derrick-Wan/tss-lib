@@ -27,6 +27,7 @@ type (
 
 	LocalSecrets struct {
 		// secret fields (not shared, but stored locally)
+		//todo: What is the use of share
 		Xi, ShareID *big.Int // xi, kj
 	}
 

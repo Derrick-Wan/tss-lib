@@ -92,7 +92,8 @@ func GenerateTestPartyIDs(count int, startAt ...int) SortedPartyIDs {
 			MessageWrapper_PartyID: &MessageWrapper_PartyID{
 				Id:      fmt.Sprintf("%d", i+1),
 				Moniker: fmt.Sprintf("P[%d]", i+1),
-				Key:     new(big.Int).Sub(key, big.NewInt(int64(count)-int64(i))).Bytes(),
+				//How to generate key.
+				Key: new(big.Int).Sub(key, big.NewInt(int64(count)-int64(i))).Bytes(),
 			},
 			Index: i,
 			// this key makes tests more deterministic

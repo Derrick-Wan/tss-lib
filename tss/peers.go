@@ -12,6 +12,7 @@ type (
 	}
 )
 
+// NewPeerContext store sorted party IDs.
 func NewPeerContext(parties SortedPartyIDs) *PeerContext {
 	return &PeerContext{partyIDs: parties}
 }
