@@ -84,6 +84,7 @@ func (round *round2) Start() *tss.Error {
 		})
 	}
 	wg.Wait()
+
 	for _, culprit := range append(dlnProof1FailCulprits, dlnProof2FailCulprits...) {
 		if culprit != nil {
 			return round.WrapError(errors.New("dln proof verification failed"), culprit)
